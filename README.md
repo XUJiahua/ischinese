@@ -1,3 +1,4 @@
+[Doc](https://pkg.go.dev/github.com/xujiahua/ischinese)
 
 ## Resources
 
