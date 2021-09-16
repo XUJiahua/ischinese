@@ -47,8 +47,8 @@ func TestParseUnicodeString(t *testing.T) {
 }
 
 func Test_buildDictionary(t *testing.T) {
-	simplifiedDict := make(map[rune]struct{})
-	traditionalDict := make(map[rune]struct{})
+	simplifiedDict := make(map[rune]rune)
+	traditionalDict := make(map[rune]rune)
 	err := buildDictionary(simplifiedDict, traditionalDict)
 	if err != nil {
 		t.Error(err)
@@ -204,6 +204,30 @@ func TestIsSimplifiedChinese(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsSimplifiedChinese(tt.s); got != tt.want {
 				t.Errorf("IsSimplifiedChinese() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestConvert2Simplified(t *testing.T) {
+	tests := []struct {
+		name string
+		s    string
+		want string
+	}{
+		{
+			s:    "",
+			want: "",
+		},
+		{
+			s:    "大劉說說",
+			want: "大刘说说",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := Convert2Simplified(tt.s); got != tt.want {
+				t.Errorf("Convert2Simplified() = %v, want %v", got, tt.want)
 			}
 		})
 	}

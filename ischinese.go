@@ -116,12 +116,12 @@ var commonRange = [][]rune{
 	},
 }
 
-var simplifiedDict map[rune]struct{}
-var traditionalDict map[rune]struct{}
+var simplifiedDict map[rune]rune
+var traditionalDict map[rune]rune
 
 func init() {
-	simplifiedDict = make(map[rune]struct{})
-	traditionalDict = make(map[rune]struct{})
+	simplifiedDict = make(map[rune]rune)
+	traditionalDict = make(map[rune]rune)
 	err := buildDictionary(simplifiedDict, traditionalDict)
 	if err != nil {
 		panic(err)
@@ -131,20 +131,25 @@ func init() {
 //go:embed Unihan_Variants.txt
 var fs embed.FS
 
-func buildDictionary(simplifiedDict, traditionalDict map[rune]struct{}) error {
+func buildDictionary(simplifiedDict, traditionalDict map[rune]rune) error {
 	file, err := fs.Open("Unihan_Variants.txt")
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	parseUnicode := func(s string, dict map[rune]struct{}) {
-		r, err := parseUnicodeString(s)
+	parseUnicode := func(k, v string, dict map[rune]rune) {
+		kR, err := parseUnicodeString(k)
 		if err != nil {
 			// eat err
 			return
 		}
-		dict[r] = struct{}{}
+		vR, err := parseUnicodeString(v)
+		if err != nil {
+			// eat err
+			return
+		}
+		dict[kR] = vR
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -160,14 +165,14 @@ func buildDictionary(simplifiedDict, traditionalDict map[rune]struct{}) error {
 		}
 		switch fields[1] {
 		case "kSimplifiedVariant":
-			parseUnicode(fields[0], traditionalDict)
 			for _, field := range fields[2:] {
-				parseUnicode(field, simplifiedDict)
+				parseUnicode(field, fields[0], simplifiedDict)
+				parseUnicode(fields[0], field, traditionalDict)
 			}
 		case "kTraditionalVariant":
-			parseUnicode(fields[0], simplifiedDict)
 			for _, field := range fields[2:] {
-				parseUnicode(field, traditionalDict)
+				parseUnicode(field, fields[0], traditionalDict)
+				parseUnicode(fields[0], field, simplifiedDict)
 			}
 		default:
 			continue
@@ -285,4 +290,20 @@ func pureFuncHelper(s string, f func(rune) bool) bool {
 		}
 	}
 	return true
+}
+
+// Convert2Simplified replace traditional unicode code point with simplified one
+func Convert2Simplified(s string) string {
+	var res []rune
+	for _, r := range s {
+		res = append(res, replace2SimplifiedChar(r))
+	}
+	return string(res)
+}
+
+func replace2SimplifiedChar(r rune) rune {
+	if replaced, ok := traditionalDict[r]; ok {
+		return replaced
+	}
+	return r
 }
